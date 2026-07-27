@@ -21,7 +21,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-  "prefect>=3.7.1,<4",
+  "prefect>=3.7.2,<4",
   "exceptiongroup>=1.2; python_version < '3.11'",
   # Provisional pre-release range. Confirm the final compatibility policy with
   # Tenki before the first public release.

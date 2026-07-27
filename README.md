@@ -28,7 +28,7 @@ The current implementation includes:
 ## Requirements
 
 - Python 3.10 or newer;
-- Prefect 3.7.1 or newer, below 4.0;
+- Prefect 3.7.2 or newer, below 4.0;
 - `tenki-sandbox` 0.4.x;
 - for a real flow run, a Tenki image or snapshot containing Prefect and the flow's
   runtime dependencies, with outbound access to the configured Prefect API.

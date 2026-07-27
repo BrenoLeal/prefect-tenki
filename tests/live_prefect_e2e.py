@@ -30,9 +30,17 @@ from uuid import UUID
 
 REPOSITORY_URL = "https://github.com/BrenoLeal/prefect-tenki.git"
 DEFAULT_SOURCE_BRANCH = "feat/prefect-tenki-worker"
-PREFECT_IMAGE = "prefecthq/prefect-client:3.8.0-python3.12"
-REMOTE_DATASET_PATH = "/tmp/prefect-tenki-e2e/iris.csv"
-REMOTE_MANIFEST_PATH = "/tmp/prefect-tenki-e2e/manifest.json"
+PREFECT_VERSION = "3.8.0"
+PREFECT_BOOTSTRAP_COMMAND = (
+    "set -euo pipefail; "
+    "uv venv --quiet /tmp/prefect-tenki-venv; "
+    "uv pip install --quiet "
+    "--python /tmp/prefect-tenki-venv/bin/python "
+    f"'prefect=={PREFECT_VERSION}'; "
+    "exec /tmp/prefect-tenki-venv/bin/prefect flow-run execute"
+)
+REMOTE_DATASET_PATH = "/home/tenki/prefect-tenki-e2e/iris.csv"
+REMOTE_MANIFEST_PATH = "/home/tenki/prefect-tenki-e2e/manifest.json"
 TUNNEL_URL_PATTERN = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
 
 
@@ -233,7 +241,7 @@ def _create_deployment(
             "workspace_id": workspace_id,
             "cpu_cores": 1,
             "memory_mb": 1024,
-            "image": PREFECT_IMAGE,
+            "command": PREFECT_BOOTSTRAP_COMMAND,
             "allow_inbound": False,
             "allow_outbound": True,
             "max_duration_seconds": max(360, hold_seconds + 180),
@@ -464,7 +472,7 @@ def main() -> None:
     report: dict[str, Any] = {
         "started_at": datetime.now(UTC).isoformat(),
         "hold_seconds": args.hold_seconds,
-        "image": PREFECT_IMAGE,
+        "runtime": f"Tenki base image + prefect=={PREFECT_VERSION}",
         "source_branch": args.source_branch,
         "artifact_dir": str(artifact_dir),
     }

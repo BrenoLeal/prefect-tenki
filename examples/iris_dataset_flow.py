@@ -18,7 +18,7 @@ from prefect.artifacts import create_markdown_artifact
 
 DATASET_URL = "https://archive.ics.uci.edu/static/public/53/iris.zip"
 DATASET_DOI = "https://doi.org/10.24432/C56C76"
-REMOTE_OUTPUT_DIR = Path("/tmp/prefect-tenki-e2e")
+REMOTE_OUTPUT_DIR = Path("/home/tenki/prefect-tenki-e2e")
 REMOTE_DATASET_PATH = REMOTE_OUTPUT_DIR / "iris.csv"
 REMOTE_MANIFEST_PATH = REMOTE_OUTPUT_DIR / "manifest.json"
 

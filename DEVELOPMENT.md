@@ -72,7 +72,7 @@ creating a sandbox:
 
 ```powershell
 $env:TENKI_SMOKE_IDENTITY_ONLY = "1"
-uv run python tests/live_worker_smoke.py
+uv run --isolated --frozen python tests/live_worker_smoke.py
 Remove-Item Env:TENKI_SMOKE_IDENTITY_ONLY
 ```
 
@@ -87,7 +87,7 @@ dashboard for 30 seconds, and close it:
 
 ```powershell
 $env:TENKI_SMOKE_HOLD_SECONDS = "30"
-uv run python tests/live_worker_smoke.py
+uv run --isolated --frozen python tests/live_worker_smoke.py
 ```
 
 Remove the credential from the shell after testing:

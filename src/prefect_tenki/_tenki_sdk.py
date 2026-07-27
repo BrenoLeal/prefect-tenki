@@ -9,6 +9,8 @@ from typing import Any, Protocol
 
 OutputHandler = Callable[[str, bytes], None]
 
+_COMMAND_TIMEOUT_CUSHION_SECONDS = 5
+
 try:
     from builtins import BaseExceptionGroup
 except ImportError:  # pragma: no cover - Python 3.10 only
@@ -162,7 +164,11 @@ class AsyncTenkiSdk:
             asyncio.create_task(forward("stderr", process.stderr)),
         ]
         try:
-            result = await process.wait()
+            # The guest enforces ``timeout``; this client-side deadline is the
+            # same backstop used by the SDK's non-streaming ``exec`` helper.
+            result = await process.wait(
+                timeout=timeout + _COMMAND_TIMEOUT_CUSHION_SECONDS
+            )
         except BaseException:
             for task in stream_tasks:
                 task.cancel()

@@ -177,7 +177,6 @@ class TenkiWorker(
             "max_duration": configuration.max_duration_seconds,
             "timeout": configuration.create_timeout_seconds,
             "wait": True,
-            "wait_for_runtime": True,
             "metadata": {
                 **configuration.metadata,
                 **configuration.labels,

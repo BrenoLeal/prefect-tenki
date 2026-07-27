@@ -155,7 +155,7 @@ def test_success_reports_sandbox_id_forwards_env_and_always_closes(caplog):
     assert "auth_token" not in sdk.created_sandbox_options
     assert sdk.created_sandbox_options["max_duration"] == 3600
     assert sdk.created_sandbox_options["wait"] is True
-    assert sdk.created_sandbox_options["wait_for_runtime"] is True
+    assert "wait_for_runtime" not in sdk.created_sandbox_options
     assert sdk.created_sandbox_options["allow_inbound"] is False
     assert sdk.created_sandbox_options["allow_outbound"] is True
     assert sdk.created_sandbox_options["metadata"] == {

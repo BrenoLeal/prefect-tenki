@@ -40,7 +40,7 @@ integration is approved, the package can move under `src/integrations/prefect-te
 - preservation of primary and cleanup failures;
 - close by sandbox ID and not-found mapping;
 - explicit cleanup of both the sandbox and its owning SDK client;
-- SDK resource validation and explicit runtime readiness;
+- SDK resource validation without requiring an optional template runtime;
 - split UTF-8 output chunks;
 - public async SDK contract inspection.
 

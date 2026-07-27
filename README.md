@@ -66,7 +66,7 @@ uv build
 ```
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for the tested SDK surface, lifecycle guarantees,
-and the live checks deferred until Tenki credits are available.
+the zero-credit workflow, and the opt-in live worker smoke test.
 
 ## Contribution status
 

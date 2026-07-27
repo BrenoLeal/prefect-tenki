@@ -54,6 +54,54 @@ integration is approved, the package can move under `src/integrations/prefect-te
 - a complete Prefect deployment run against a publicly reachable API;
 - final repository, ownership, minimum Prefect version, and release metadata.
 
+## Opt-in live worker smoke test
+
+The live smoke test uses the real SDK and may consume Tenki credits. It is never
+collected by pytest or run by CI.
+
+First, provide the Workspace API key through the current PowerShell process. The
+secure prompt keeps the value out of the command history:
+
+```powershell
+$secureKey = Read-Host "TENKI_API_KEY" -AsSecureString
+$env:TENKI_API_KEY = [System.Net.NetworkCredential]::new("", $secureKey).Password
+```
+
+Validate authentication and list the accessible workspace/project IDs without
+creating a sandbox:
+
+```powershell
+$env:TENKI_SMOKE_IDENTITY_ONLY = "1"
+uv run python tests/live_worker_smoke.py
+Remove-Item Env:TENKI_SMOKE_IDENTITY_ONLY
+```
+
+If more than one project is listed, select one:
+
+```powershell
+$env:TENKI_PROJECT_ID = "<project-id>"
+```
+
+Then create one 1-vCPU/512-MiB sandbox, run a short command, keep it visible in the
+dashboard for 30 seconds, and close it:
+
+```powershell
+$env:TENKI_SMOKE_HOLD_SECONDS = "30"
+uv run python tests/live_worker_smoke.py
+```
+
+Remove the credential from the shell after testing:
+
+```powershell
+Remove-Item Env:TENKI_API_KEY
+Remove-Item Env:TENKI_PROJECT_ID -ErrorAction SilentlyContinue
+Remove-Item Env:TENKI_WORKSPACE_ID -ErrorAction SilentlyContinue
+```
+
+The worker shields cleanup from cancellation and also applies a short maximum
+duration as a server-side backstop. If the local process is forcibly killed, inspect
+the Tenki dashboard and terminate any remaining smoke-test sandbox explicitly.
+
 ## Branch and review workflow
 
 - `main` contains reviewed changes.

@@ -304,6 +304,7 @@ async def _monitor_and_download(
     from prefect.client.orchestration import get_client
     from tenki_sandbox import (
         AsyncClient,
+        PermissionDeniedError,
         SessionNotFoundError,
         SessionTerminatedError,
     )
@@ -350,7 +351,12 @@ async def _monitor_and_download(
                         REMOTE_DATASET_PATH,
                         dataset_tmp,
                     )
-                except TenkiFileNotFoundError:
+                except (TenkiFileNotFoundError, PermissionDeniedError) as exc:
+                    # SDK 0.4.0 maps a not-yet-created path below the guest
+                    # workdir to PermissionDeniedError("path_escape: no such
+                    # file or directory") instead of FileNotFoundError.
+                    if "no such file or directory" not in str(exc).lower():
+                        raise
                     manifest_tmp.unlink(missing_ok=True)
                     dataset_tmp.unlink(missing_ok=True)
                 else:

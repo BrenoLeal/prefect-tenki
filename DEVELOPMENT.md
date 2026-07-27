@@ -110,6 +110,12 @@ and one flow run in a Tenki sandbox. The flow downloads the
 rows, remains visible for three minutes, and then exits. While it is running, the
 harness retrieves `iris.csv` from the sandbox through the Tenki SDK.
 
+The `image` worker variable expects a published Tenki Registry reference, not a
+Docker Hub image. This one-off harness therefore uses the Tenki base image and
+creates an ephemeral `uv` environment with Prefect 3.8.0. Remote evidence is
+written below `/home/tenki`, because SDK filesystem reads reject paths outside
+the guest workdir (including `/tmp`).
+
 Because the remote sandbox cannot reach `localhost`, the harness uses an official
 `cloudflared` quick tunnel. The Prefect API is protected with a random temporary
 Basic Auth credential, and its ephemeral database is deleted after the run.

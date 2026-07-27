@@ -102,6 +102,42 @@ The worker shields cleanup from cancellation and also applies a short maximum
 duration as a server-side backstop. If the local process is forcibly killed, inspect
 the Tenki dashboard and terminate any remaining smoke-test sandbox explicitly.
 
+## Opt-in Prefect deployment E2E
+
+The full E2E test creates an ephemeral Prefect Server, a real `tenki` work pool,
+and one flow run in a Tenki sandbox. The flow downloads the
+[UCI Iris dataset](https://archive.ics.uci.edu/dataset/53/iris), validates its 150
+rows, remains visible for three minutes, and then exits. While it is running, the
+harness retrieves `iris.csv` from the sandbox through the Tenki SDK.
+
+Because the remote sandbox cannot reach `localhost`, the harness uses an official
+`cloudflared` quick tunnel. The Prefect API is protected with a random temporary
+Basic Auth credential, and its ephemeral database is deleted after the run.
+
+Download the official tunnel binary into the ignored build directory:
+
+```powershell
+New-Item -ItemType Directory -Force build/tools | Out-Null
+Invoke-WebRequest `
+  https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe `
+  -OutFile build/tools/cloudflared.exe
+```
+
+The example flow must exist on the public source branch configured by the harness.
+Then run:
+
+```powershell
+.\.venv\Scripts\python.exe tests/live_prefect_e2e.py `
+  --confirm-live `
+  --hold-seconds 180
+```
+
+During the hold, open the local Prefect UI printed by the harness and the Tenki UI.
+The sandbox ID is printed as soon as the worker reports its infrastructure PID.
+Afterward, inspect `build/e2e/<timestamp>/E2E_REPORT.json`, `iris.csv`, the
+remote manifest, and the sanitized Prefect/worker/tunnel logs. The script stops all
+child processes and confirms the remote sandbox cleanup when possible.
+
 ## Branch and review workflow
 
 - `main` contains reviewed changes.

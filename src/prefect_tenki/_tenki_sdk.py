@@ -81,12 +81,12 @@ class _ManagedAsyncSandbox:
 
 
 class AsyncTenkiSdk:
-    """Adapter for ``tenki_sandbox.AsyncClient`` and ``AsyncSandbox``."""
+    """Adapter for ``tenki.AsyncClient`` and ``tenki.AsyncSandbox``."""
 
     @staticmethod
     def _import_sdk() -> tuple[type[Any], type[Any], type[Exception]]:
         try:
-            from tenki_sandbox import (
+            from tenki import (
                 AsyncClient,
                 AsyncSandbox,
                 SessionNotFoundError,

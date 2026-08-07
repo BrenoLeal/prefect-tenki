@@ -20,14 +20,14 @@ package is used only by a local contract test that inspects classes and signatur
 ## Current development baseline
 
 - Prefect tested locally: `3.8.0`.
-- Tenki SDK tested locally: `0.4.0`.
+- Tenki SDK tested locally: `0.5.4`.
 - Worker API: `BaseWorker.run()` and `kill_infrastructure()`.
 - Guest command: `prefect flow-run execute`.
-- SDK surface: `AsyncClient`, `AsyncSandbox`, and `CommandResult`.
+- SDK namespace and surface: `tenki.AsyncClient`, `tenki.AsyncSandbox`, and `tenki.CommandResult`.
 
-The package is deliberately located next to the Prefect clone. If Prefect requests a
-standalone integration, this directory can become its repository. If a monorepo
-integration is approved, the package can move under `src/integrations/prefect-tenki`.
+`tenki-prefect` is maintained as a standalone repository. If a future Prefect
+monorepo contribution is approved, the package can move to the integration path
+requested by Prefect maintainers.
 
 ## No-credit tests
 
@@ -52,7 +52,7 @@ integration is approved, the package can move under `src/integrations/prefect-te
 - idempotency of repeated remote termination;
 - image or snapshot containing Prefect;
 - a complete Prefect deployment run against a publicly reachable API;
-- final repository, ownership, minimum Prefect version, and release metadata.
+- final minimum Prefect version, release metadata, and package publication.
 
 ## Opt-in live worker smoke test
 

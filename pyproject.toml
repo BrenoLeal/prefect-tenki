@@ -23,15 +23,14 @@ classifiers = [
 dependencies = [
   "prefect>=3.7.2,<4",
   "exceptiongroup>=1.2; python_version < '3.11'",
-  # Provisional pre-release range. Confirm the final compatibility policy with
-  # Tenki before the first public release.
-  "tenki-sandbox>=0.4.0,<0.5",
+  # Stay within the SDK minor line covered by the integration contract tests.
+  "tenki>=0.5.4,<0.6",
 ]
 
 [project.urls]
-Homepage = "https://github.com/BrenoLeal/prefect-tenki"
-Repository = "https://github.com/BrenoLeal/prefect-tenki"
-Issues = "https://github.com/BrenoLeal/prefect-tenki/issues"
+Homepage = "https://github.com/luxorlabs/tenki-prefect"
+Repository = "https://github.com/luxorlabs/tenki-prefect"
+Issues = "https://github.com/luxorlabs/tenki-prefect/issues"
 
 [dependency-groups]
 dev = [

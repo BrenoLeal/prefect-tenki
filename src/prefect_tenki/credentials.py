@@ -40,6 +40,6 @@ class TenkiCredentials(CredentialsBlock):
 
     def get_client(self):
         """Return a native asynchronous Tenki client."""
-        from tenki_sandbox import AsyncClient
+        from tenki import AsyncClient
 
         return AsyncClient(**self.get_client_options())

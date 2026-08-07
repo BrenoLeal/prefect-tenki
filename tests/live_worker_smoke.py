@@ -11,7 +11,7 @@ import os
 from typing import Any
 
 import anyio
-from tenki_sandbox import AsyncClient
+from tenki import AsyncClient
 
 from prefect_tenki import (
     TenkiCredentials,
@@ -143,7 +143,7 @@ async def main() -> None:
     hold_seconds = _hold_seconds()
     command = (
         "set -eu; "
-        'echo "prefect-tenki live smoke"; '
+        'echo "tenki-prefect live smoke"; '
         'printf "hostname="; hostname; '
         'printf "user="; whoami; '
         "python3 --version; "
@@ -151,7 +151,7 @@ async def main() -> None:
         'echo "smoke complete"'
     )
     configuration = TenkiWorkerJobConfiguration(
-        name="prefect-tenki-live-smoke",
+        name="tenki-prefect-live-smoke",
         command=command,
         credentials=credentials,
         project_id=project_id,
@@ -164,10 +164,10 @@ async def main() -> None:
         create_timeout_seconds=180,
         command_timeout_seconds=max(60, hold_seconds + 30),
         stream_output=True,
-        metadata={"source": "prefect-tenki-live-smoke"},
+        metadata={"source": "tenki-prefect-live-smoke"},
     )
 
-    worker = TenkiWorker(work_pool_name="prefect-tenki-live-smoke")
+    worker = TenkiWorker(work_pool_name="tenki-prefect-live-smoke")
     result = await worker.run(
         object(),
         configuration,

@@ -1,6 +1,6 @@
 import inspect
 
-from tenki_sandbox import AsyncClient, AsyncSandbox, CommandResult
+from tenki import AsyncClient, AsyncSandbox, CommandResult
 
 
 def test_supported_sdk_exposes_required_async_contract_without_api_calls():

@@ -1,9 +1,12 @@
-# prefect-tenki
+# tenki-prefect
 
-[![CI](https://github.com/BrenoLeal/prefect-tenki/actions/workflows/ci.yml/badge.svg)](https://github.com/BrenoLeal/prefect-tenki/actions/workflows/ci.yml)
+[![CI](https://github.com/luxorlabs/tenki-prefect/actions/workflows/ci.yml/badge.svg)](https://github.com/luxorlabs/tenki-prefect/actions/workflows/ci.yml)
 
-`prefect-tenki` is a Prefect worker integration for running flow runs in isolated,
+`tenki-prefect` is a Prefect worker integration for running flow runs in isolated,
 ephemeral [Tenki](https://tenki.cloud) sandboxes.
+
+The repository is named `tenki-prefect`. The Python distribution remains
+`prefect-tenki` and is imported as `prefect_tenki`.
 
 > [!IMPORTANT]
 > This project is in early development. Its public API, packaging, and eventual
@@ -20,7 +23,7 @@ The current implementation includes:
 - Prefect collection and worker-type registration;
 - a masked `TenkiCredentials` block;
 - configurable project, workspace, compute, image, network, and timeout options;
-- an asynchronous boundary around `tenki-sandbox` 0.4.x;
+- an asynchronous boundary around `tenki` 0.5.x;
 - cancellation-safe creation and cleanup;
 - remote termination by Prefect infrastructure identifier;
 - mocked lifecycle and SDK-contract tests that do not create Tenki resources.
@@ -29,7 +32,7 @@ The current implementation includes:
 
 - Python 3.10 or newer;
 - Prefect 3.7.2 or newer, below 4.0;
-- `tenki-sandbox` 0.4.x;
+- `tenki` 0.5.4 or newer, below 0.6;
 - for a real flow run, a Tenki image or snapshot containing Prefect and the flow's
   runtime dependencies, with outbound access to the configured Prefect API.
 
@@ -39,8 +42,8 @@ The package has not been published to PyPI. To inspect the current development
 version:
 
 ```bash
-git clone https://github.com/BrenoLeal/prefect-tenki.git
-cd prefect-tenki
+git clone https://github.com/luxorlabs/tenki-prefect.git
+cd tenki-prefect
 uv sync --frozen
 ```
 
@@ -70,9 +73,8 @@ the zero-credit workflow, and the opt-in live worker smoke test.
 
 ## Contribution status
 
-This repository is used for internal review of the standalone package while the
-preferred upstream contribution path is discussed with Prefect maintainers. It is
-not currently an official Prefect-maintained integration.
+This standalone integration is maintained by Luxor Labs. It is not currently an
+official Prefect-maintained integration.
 
 ## License
 

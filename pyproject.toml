@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prefect-tenki"
+version = "0.1.0.dev0"
+description = "Prefect worker integration for running flow runs in Tenki sandboxes."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Breno Leal" }]
+keywords = ["prefect", "tenki", "workflow-orchestration", "worker"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+  "prefect>=3.7.2,<4",
+  "exceptiongroup>=1.2; python_version < '3.11'",
+  # Stay within the SDK minor line covered by the integration contract tests.
+  "tenki>=0.5.4,<0.6",
+]
+
+[project.urls]
+Homepage = "https://github.com/luxorlabs/tenki-prefect"
+Repository = "https://github.com/luxorlabs/tenki-prefect"
+Issues = "https://github.com/luxorlabs/tenki-prefect/issues"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "ruff>=0.12",
+]
+
+[project.entry-points."prefect.collections"]
+prefect_tenki = "prefect_tenki"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+prefect_tenki = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -p no:cacheprovider"
+
+[tool.ruff]
+exclude = [".prefect-home", ".uv-cache", ".venv"]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

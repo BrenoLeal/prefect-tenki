@@ -1,6 +1,14 @@
 import inspect
 
-from tenki import AsyncClient, AsyncSandbox, CommandResult, IdentityWorkspace
+from tenki import (
+    AsyncClient,
+    AsyncSandbox,
+    CommandResult,
+    IdentityWorkspace,
+    InvalidStateError,
+    SessionNotFoundError,
+    SessionTerminatedError,
+)
 
 
 def test_supported_sdk_exposes_required_async_contract_without_api_calls():
@@ -32,5 +40,13 @@ def test_supported_sdk_exposes_required_async_contract_without_api_calls():
         "reason",
         "errno",
     } <= result_fields
+    assert all(
+        issubclass(error_type, Exception)
+        for error_type in (
+            InvalidStateError,
+            SessionNotFoundError,
+            SessionTerminatedError,
+        )
+    )
     assert inspect.iscoroutinefunction(AsyncClient.get)
     assert inspect.iscoroutinefunction(AsyncSandbox.close_if_open)

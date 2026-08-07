@@ -14,13 +14,45 @@ except ImportError:  # pragma: no cover - Python 3.10 only
     from exceptiongroup import BaseExceptionGroup  # type: ignore[no-redef]
 
 
+class FakeSessionNotFoundError(Exception):
+    pass
+
+
+class FakeSessionTerminatedError(Exception):
+    pass
+
+
+class FakeInvalidStateError(Exception):
+    pass
+
+
 class RawSandbox:
-    def __init__(self, sandbox_id: str = "sb-managed") -> None:
+    def __init__(
+        self,
+        sandbox_id: str = "sb-managed",
+        state: str = "RUNNING",
+    ) -> None:
         self.id = sandbox_id
+        self.state = state
         self.closed = False
+        self.close_calls = 0
+        self.close_error: Exception | None = None
+        self.refresh_calls = 0
+        self.refresh_state: str | None = None
+        self.refresh_error: Exception | None = None
 
     async def close_if_open(self) -> None:
+        self.close_calls += 1
+        if self.close_error:
+            raise self.close_error
         self.closed = True
+
+    async def refresh(self) -> None:
+        self.refresh_calls += 1
+        if self.refresh_error:
+            raise self.refresh_error
+        if self.refresh_state is not None:
+            self.state = self.refresh_state
 
 
 class ChunkStream:
@@ -106,6 +138,7 @@ class CommandSandbox:
 class FakeAsyncClient:
     instances: list[FakeAsyncClient] = []
     create_error: Exception | None = None
+    get_sandbox: RawSandbox | None = None
 
     def __init__(self, **options: Any) -> None:
         self.options = options
@@ -121,7 +154,7 @@ class FakeAsyncClient:
         return self.sandbox
 
     async def get(self, sandbox_id: str) -> RawSandbox:
-        self.sandbox = RawSandbox(sandbox_id)
+        self.sandbox = self.__class__.get_sandbox or RawSandbox(sandbox_id)
         return self.sandbox
 
     async def close(self) -> None:
@@ -140,10 +173,19 @@ class FakeAsyncClient:
 def reset_client_state(monkeypatch):
     FakeAsyncClient.instances = []
     FakeAsyncClient.create_error = None
+    FakeAsyncClient.get_sandbox = None
     monkeypatch.setattr(
         AsyncTenkiSdk,
         "_import_sdk",
-        staticmethod(lambda: (FakeAsyncClient, object, LookupError)),
+        staticmethod(
+            lambda: (
+                FakeAsyncClient,
+                object,
+                FakeSessionNotFoundError,
+                FakeSessionTerminatedError,
+                FakeInvalidStateError,
+            )
+        ),
     )
 
 
@@ -162,6 +204,165 @@ def test_adapter_closes_sandbox_and_owning_client():
         await adapter.close_sandbox(managed)
 
         assert client.sandbox.closed is True
+        assert client.closed is True
+
+    anyio.run(scenario)
+
+
+@pytest.mark.parametrize(
+    "close_error_type",
+    [FakeSessionNotFoundError, FakeSessionTerminatedError],
+)
+def test_adapter_treats_terminal_close_errors_as_success(close_error_type):
+    async def scenario() -> None:
+        adapter = AsyncTenkiSdk()
+        managed = await adapter.create_sandbox(
+            client_options={"auth_token": "secret"},
+            sandbox_options={"name": "test"},
+        )
+        client = FakeAsyncClient.instances[0]
+        client.sandbox.close_error = close_error_type("already closed")
+
+        await adapter.close_sandbox(managed)
+
+        assert client.sandbox.close_calls == 1
+        assert client.sandbox.refresh_calls == 0
+        assert client.closed is True
+
+    anyio.run(scenario)
+
+
+@pytest.mark.parametrize("terminal_state", ["TERMINATING", "TERMINATED"])
+def test_adapter_verifies_terminal_state_after_invalid_state(terminal_state):
+    async def scenario() -> None:
+        adapter = AsyncTenkiSdk()
+        managed = await adapter.create_sandbox(
+            client_options={"auth_token": "secret"},
+            sandbox_options={"name": "test"},
+        )
+        client = FakeAsyncClient.instances[0]
+        client.sandbox.close_error = FakeInvalidStateError(
+            "cannot terminate session in current state"
+        )
+        client.sandbox.refresh_state = terminal_state
+
+        await adapter.close_sandbox(managed)
+
+        assert client.sandbox.refresh_calls == 1
+        assert client.sandbox.state == terminal_state
+        assert client.closed is True
+
+    anyio.run(scenario)
+
+
+def test_adapter_treats_missing_session_during_refresh_as_closed():
+    async def scenario() -> None:
+        adapter = AsyncTenkiSdk()
+        managed = await adapter.create_sandbox(
+            client_options={"auth_token": "secret"},
+            sandbox_options={"name": "test"},
+        )
+        client = FakeAsyncClient.instances[0]
+        client.sandbox.close_error = FakeInvalidStateError(
+            "cannot terminate session in current state"
+        )
+        client.sandbox.refresh_error = FakeSessionNotFoundError("missing")
+
+        await adapter.close_sandbox(managed)
+
+        assert client.sandbox.refresh_calls == 1
+        assert client.closed is True
+
+    anyio.run(scenario)
+
+
+def test_adapter_re_raises_invalid_state_when_refresh_confirms_running():
+    async def scenario() -> None:
+        adapter = AsyncTenkiSdk()
+        managed = await adapter.create_sandbox(
+            client_options={"auth_token": "secret"},
+            sandbox_options={"name": "test"},
+        )
+        client = FakeAsyncClient.instances[0]
+        close_error = FakeInvalidStateError("cannot terminate session in current state")
+        client.sandbox.close_error = close_error
+        client.sandbox.refresh_state = "RUNNING"
+
+        with pytest.raises(FakeInvalidStateError) as exc_info:
+            await adapter.close_sandbox(managed)
+
+        assert exc_info.value is close_error
+        assert client.sandbox.refresh_calls == 1
+        assert client.closed is True
+
+    anyio.run(scenario)
+
+
+def test_adapter_preserves_close_and_refresh_failures():
+    async def scenario() -> None:
+        adapter = AsyncTenkiSdk()
+        managed = await adapter.create_sandbox(
+            client_options={"auth_token": "secret"},
+            sandbox_options={"name": "test"},
+        )
+        client = FakeAsyncClient.instances[0]
+        client.sandbox.close_error = FakeInvalidStateError(
+            "cannot terminate session in current state"
+        )
+        client.sandbox.refresh_error = RuntimeError("refresh failed")
+
+        with pytest.raises(BaseExceptionGroup) as exc_info:
+            await adapter.close_sandbox(managed)
+
+        assert [str(error) for error in exc_info.value.exceptions] == [
+            "cannot terminate session in current state",
+            "refresh failed",
+        ]
+        assert client.closed is True
+
+    anyio.run(scenario)
+
+
+def test_adapter_close_by_id_tolerates_terminal_state_race():
+    async def scenario() -> None:
+        sandbox = RawSandbox("sb-remote")
+        sandbox.close_error = FakeInvalidStateError(
+            "cannot terminate session in current state"
+        )
+        sandbox.refresh_state = "TERMINATED"
+        FakeAsyncClient.get_sandbox = sandbox
+        adapter = AsyncTenkiSdk()
+
+        await adapter.close_sandbox_by_id(
+            "sb-remote",
+            client_options={"auth_token": "secret"},
+        )
+
+        client = FakeAsyncClient.instances[0]
+        assert sandbox.refresh_calls == 1
+        assert client.closed is True
+
+    anyio.run(scenario)
+
+
+def test_adapter_preserves_sandbox_and_client_cleanup_failures():
+    async def scenario() -> None:
+        adapter = AsyncTenkiSdk()
+        managed = await adapter.create_sandbox(
+            client_options={"auth_token": "secret"},
+            sandbox_options={"name": "test"},
+        )
+        client = FakeAsyncClient.instances[0]
+        client.sandbox.close_error = OSError("sandbox close failed")
+        client.close_error = RuntimeError("client close failed")
+
+        with pytest.raises(BaseExceptionGroup) as exc_info:
+            await adapter.close_sandbox(managed)
+
+        assert [str(error) for error in exc_info.value.exceptions] == [
+            "sandbox close failed",
+            "client close failed",
+        ]
         assert client.closed is True
 
     anyio.run(scenario)

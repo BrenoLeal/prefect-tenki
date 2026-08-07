@@ -10,6 +10,7 @@ from typing import Any, Protocol
 OutputHandler = Callable[[str, bytes], None]
 
 _COMMAND_TIMEOUT_CUSHION_SECONDS = 5
+_TERMINAL_SANDBOX_STATES = frozenset({"TERMINATING", "TERMINATED"})
 
 try:
     from builtins import BaseExceptionGroup
@@ -84,19 +85,33 @@ class AsyncTenkiSdk:
     """Adapter for ``tenki.AsyncClient`` and ``tenki.AsyncSandbox``."""
 
     @staticmethod
-    def _import_sdk() -> tuple[type[Any], type[Any], type[Exception]]:
+    def _import_sdk() -> tuple[
+        type[Any],
+        type[Any],
+        type[Exception],
+        type[Exception],
+        type[Exception],
+    ]:
         try:
             from tenki import (
                 AsyncClient,
                 AsyncSandbox,
+                InvalidStateError,
                 SessionNotFoundError,
+                SessionTerminatedError,
             )
         except ImportError as exc:  # pragma: no cover - packaging failure
             raise RuntimeError(
                 "The Tenki SDK is not installed. Install prefect-tenki with its "
                 "runtime dependencies."
             ) from exc
-        return AsyncClient, AsyncSandbox, SessionNotFoundError
+        return (
+            AsyncClient,
+            AsyncSandbox,
+            SessionNotFoundError,
+            SessionTerminatedError,
+            InvalidStateError,
+        )
 
     async def create_sandbox(
         self,
@@ -104,7 +119,7 @@ class AsyncTenkiSdk:
         client_options: Mapping[str, str],
         sandbox_options: Mapping[str, Any],
     ) -> TenkiSandbox:
-        client_type, _, _ = self._import_sdk()
+        client_type, _, _, _, _ = self._import_sdk()
         client = client_type(**client_options)
         try:
             sandbox = await client.create(**sandbox_options)
@@ -181,7 +196,7 @@ class AsyncTenkiSdk:
         raw_sandbox = self._unwrap_sandbox(sandbox)
         errors: list[BaseException] = []
         try:
-            await raw_sandbox.close_if_open()
+            await self._close_sandbox_if_needed(raw_sandbox)
         except BaseException as exc:
             errors.append(exc)
 
@@ -199,17 +214,44 @@ class AsyncTenkiSdk:
                 errors,
             )
 
+    async def _close_sandbox_if_needed(self, raw_sandbox: Any) -> None:
+        (
+            _,
+            _,
+            not_found_type,
+            terminated_type,
+            invalid_state_type,
+        ) = self._import_sdk()
+        try:
+            await raw_sandbox.close_if_open()
+        except (not_found_type, terminated_type):
+            return
+        except invalid_state_type as close_error:
+            try:
+                await raw_sandbox.refresh()
+            except (not_found_type, terminated_type):
+                return
+            except Exception as refresh_error:
+                raise BaseExceptionGroup(
+                    "Tenki sandbox cleanup failed and terminal state could not "
+                    "be verified",
+                    [close_error, refresh_error],
+                ) from None
+            if raw_sandbox.state in _TERMINAL_SANDBOX_STATES:
+                return
+            raise close_error
+
     async def close_sandbox_by_id(
         self,
         sandbox_id: str,
         *,
         client_options: Mapping[str, str],
     ) -> None:
-        client_type, _, _ = self._import_sdk()
+        client_type, _, _, _, _ = self._import_sdk()
         async with client_type(**client_options) as client:
             sandbox = await client.get(sandbox_id)
-            await sandbox.close_if_open()
+            await self._close_sandbox_if_needed(sandbox)
 
     def is_session_not_found(self, exc: Exception) -> bool:
-        _, _, not_found_type = self._import_sdk()
+        _, _, not_found_type, _, _ = self._import_sdk()
         return isinstance(exc, not_found_type)

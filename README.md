@@ -22,7 +22,7 @@ The current implementation includes:
 
 - Prefect collection and worker-type registration;
 - a masked `TenkiCredentials` block;
-- configurable project, workspace, compute, image, network, and timeout options;
+- configurable workspace, compute, image, network, and timeout options;
 - an asynchronous boundary around `tenki` 0.5.x;
 - cancellation-safe creation and cleanup;
 - remote termination by Prefect infrastructure identifier;

@@ -59,71 +59,47 @@ def _identity_only() -> bool:
     }
 
 
-def _select_scope(
+def _select_workspace(
     identity: Any,
     requested_workspace_id: str | None,
-    requested_project_id: str | None,
-) -> tuple[str | None, str | None]:
+) -> str:
     workspaces = list(identity.workspaces)
-    print("Accessible Tenki scope:")
+    print("Accessible Tenki workspaces:")
     for workspace in workspaces:
         print(f"- workspace: {workspace.name} ({workspace.id})")
-        for project in workspace.projects:
-            print(f"  - project: {project.name} ({project.id})")
 
     if requested_workspace_id:
-        workspaces = [
+        matches = [
             workspace
             for workspace in workspaces
             if workspace.id == requested_workspace_id
         ]
-        if not workspaces:
+        if not matches:
             raise RuntimeError(
                 "TENKI_WORKSPACE_ID is not accessible with this API key."
             )
+        return matches[0].id
 
-    projects = [
-        (workspace, project)
-        for workspace in workspaces
-        for project in workspace.projects
-    ]
-    if requested_project_id:
-        matches = [
-            (workspace, project)
-            for workspace, project in projects
-            if project.id == requested_project_id
-        ]
-        if not matches:
-            raise RuntimeError(
-                "TENKI_PROJECT_ID is not accessible with this API key/workspace."
-            )
-        workspace, project = matches[0]
-        return project.id, workspace.id
-
-    if len(projects) == 1:
-        workspace, project = projects[0]
-        print(f"Auto-selected project: {project.name} ({project.id})")
-        return project.id, workspace.id
-
-    if len(projects) > 1:
+    if len(workspaces) == 1:
+        workspace = workspaces[0]
+        print(f"Auto-selected workspace: {workspace.name} ({workspace.id})")
+        return workspace.id
+    if len(workspaces) > 1:
         raise RuntimeError(
-            "More than one Tenki project is accessible. Set TENKI_PROJECT_ID "
+            "More than one Tenki workspace is accessible. Set TENKI_WORKSPACE_ID "
             "to choose one before creating a sandbox."
         )
-
-    workspace_id = workspaces[0].id if len(workspaces) == 1 else None
-    return None, workspace_id
+    raise RuntimeError("No Tenki workspace is accessible with this API key.")
 
 
-async def _discover_scope(
+async def _discover_workspace_id(
     credentials: TenkiCredentials,
-) -> tuple[str | None, str | None]:
+) -> str:
     async with AsyncClient(**credentials.get_client_options()) as client:
         identity = await client.who_am_i()
-    return _select_scope(
+    return _select_workspace(
         identity,
         os.getenv("TENKI_WORKSPACE_ID") or None,
-        os.getenv("TENKI_PROJECT_ID") or None,
     )
 
 
@@ -135,7 +111,7 @@ async def main() -> None:
         api_key=_required_api_key(),
         api_endpoint=endpoint,
     )
-    project_id, workspace_id = await _discover_scope(credentials)
+    workspace_id = await _discover_workspace_id(credentials)
     if _identity_only():
         print("Identity-only check complete; no sandbox was created.")
         return
@@ -154,7 +130,6 @@ async def main() -> None:
         name="tenki-prefect-live-smoke",
         command=command,
         credentials=credentials,
-        project_id=project_id,
         workspace_id=workspace_id,
         cpu_cores=1,
         memory_mb=512,

@@ -118,6 +118,7 @@ def configuration(**overrides: Any) -> TenkiWorkerJobConfiguration:
         ),
         "command": "prefect flow-run execute",
         "name": "tenki-flow-run",
+        "workspace_id": "workspace-test-123",
         "env": {
             "PREFECT_API_URL": "https://api.prefect.cloud/api/accounts/test",
             "PREFECT_API_KEY": "prefect-secret",
@@ -153,6 +154,8 @@ def test_success_reports_sandbox_id_forwards_env_and_always_closes(caplog):
         "base_url": "https://api.example.test",
     }
     assert "auth_token" not in sdk.created_sandbox_options
+    assert "project_id" not in sdk.created_sandbox_options
+    assert sdk.created_sandbox_options["workspace_id"] == "workspace-test-123"
     assert sdk.created_sandbox_options["max_duration"] == 3600
     assert sdk.created_sandbox_options["wait"] is True
     assert "wait_for_runtime" not in sdk.created_sandbox_options

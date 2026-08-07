@@ -44,15 +44,19 @@ requested by Prefect maintainers.
 - split UTF-8 output chunks;
 - public async SDK contract inspection.
 
-## Deferred until credits and external feedback are available
+## Manual live validation
 
-- actual provisioning and create failure atomicity;
-- real stdout/stderr streaming and backpressure;
-- timeout and signal values returned by the guest;
-- idempotency of repeated remote termination;
-- image or snapshot containing Prefect;
-- a complete Prefect deployment run against a publicly reachable API;
-- final minimum Prefect version, release metadata, and package publication.
+Live checks remain opt-in and never run in CI because they authenticate with Tenki
+and may consume credits. Manual validation with Tenki SDK 0.5.4 has covered:
+
+- real sandbox provisioning and cleanup;
+- stdout/stderr streaming, exit codes, timeouts, and cancellation;
+- repeated remote termination and credential isolation;
+- a complete Prefect deployment run against an authenticated public API;
+- remote dataset retrieval and a public HTTP/WebSocket application.
+
+A reusable image or snapshot with Prefect preinstalled, final release versioning,
+and package publication remain follow-up work.
 
 ## Opt-in live worker smoke test
 
@@ -67,7 +71,7 @@ $secureKey = Read-Host "TENKI_API_KEY" -AsSecureString
 $env:TENKI_API_KEY = [System.Net.NetworkCredential]::new("", $secureKey).Password
 ```
 
-Validate authentication and list the accessible workspace/project IDs without
+Validate authentication and list the accessible workspace IDs without
 creating a sandbox:
 
 ```powershell
@@ -76,10 +80,10 @@ uv run --isolated --frozen python tests/live_worker_smoke.py
 Remove-Item Env:TENKI_SMOKE_IDENTITY_ONLY
 ```
 
-If more than one project is listed, select one:
+If more than one workspace is listed, select one:
 
 ```powershell
-$env:TENKI_PROJECT_ID = "<project-id>"
+$env:TENKI_WORKSPACE_ID = "<workspace-id>"
 ```
 
 Then create one 1-vCPU/512-MiB sandbox, run a short command, keep it visible in the
@@ -94,7 +98,6 @@ Remove the credential from the shell after testing:
 
 ```powershell
 Remove-Item Env:TENKI_API_KEY
-Remove-Item Env:TENKI_PROJECT_ID -ErrorAction SilentlyContinue
 Remove-Item Env:TENKI_WORKSPACE_ID -ErrorAction SilentlyContinue
 ```
 

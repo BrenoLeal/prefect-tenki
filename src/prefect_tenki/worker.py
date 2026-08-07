@@ -42,7 +42,6 @@ class TenkiWorkerJobConfiguration(BaseJobConfiguration):
         default=...,
         description="Credentials used by the worker to call the Tenki API.",
     )
-    project_id: str | None = Field(default=None)
     workspace_id: str | None = Field(default=None)
     cpu_cores: int = Field(default=2, ge=1, le=16)
     memory_mb: int = Field(default=4096, ge=128, le=65536, multiple_of=2)
@@ -76,7 +75,6 @@ class TenkiWorkerVariables(BaseVariables):
     """User-facing variables for a Tenki work pool."""
 
     credentials: TenkiCredentials = Field(default=...)
-    project_id: str | None = Field(default=None)
     workspace_id: str | None = Field(default=None)
     cpu_cores: int = Field(default=2, ge=1, le=16)
     memory_mb: int = Field(default=4096, ge=128, le=65536, multiple_of=2)
@@ -165,7 +163,6 @@ class TenkiWorker(
     ) -> dict[str, Any]:
         options: dict[str, Any] = {
             "name": configuration.name,
-            "project_id": configuration.project_id,
             "workspace_id": configuration.workspace_id,
             "cpu_cores": configuration.cpu_cores,
             "memory_mb": configuration.memory_mb,

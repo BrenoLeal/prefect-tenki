@@ -1,10 +1,11 @@
 import inspect
 
-from tenki import AsyncClient, AsyncSandbox, CommandResult
+from tenki import AsyncClient, AsyncSandbox, CommandResult, IdentityWorkspace
 
 
 def test_supported_sdk_exposes_required_async_contract_without_api_calls():
     create_parameters = inspect.signature(AsyncClient.create).parameters
+    identity_workspace_parameters = inspect.signature(IdentityWorkspace).parameters
     start_parameters = inspect.signature(AsyncSandbox.start).parameters
     result_fields = set(CommandResult.__dataclass_fields__)
 
@@ -20,6 +21,8 @@ def test_supported_sdk_exposes_required_async_contract_without_api_calls():
         "snapshot_id",
         "image",
     } <= set(create_parameters)
+    assert "project_id" not in create_parameters
+    assert {"id", "name"} <= set(identity_workspace_parameters)
     assert {"env", "timeout"} <= set(start_parameters)
     assert {
         "exit_code",

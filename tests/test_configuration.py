@@ -87,6 +87,8 @@ def test_default_base_job_template_exposes_tenki_variables():
 
     assert template["job_configuration"]["credentials"] == "{{ credentials }}"
     assert template["job_configuration"]["cpu_cores"] == "{{ cpu_cores }}"
+    assert "project_id" not in template["job_configuration"]
+    assert "project_id" not in template["variables"]["properties"]
     assert (
         template["variables"]["properties"]["max_duration_seconds"]["default"] == 3600
     )
